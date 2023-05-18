@@ -3,6 +3,7 @@ import { View, Image, TextInput, Text, KeyboardAvoidingView, TouchableOpacity, F
 import { useState, useEffect }  from "react";
 import { EmptyContent } from '../../components/EmptyContent';
 import { Task } from '../../components/Task';
+import { localStorage } from '../../services/localStorage';
 
 type Task = {
     done: boolean;
@@ -16,21 +17,47 @@ export function Home() {
     const [createdTasks , setCreatedTasks] = useState(0);
     const [concludedTasks , setConcludedTasks] = useState(0);
     const [id , setId] = useState(0);
-    const [tasks , setTasks] = useState<Task[]>([]);  
+    const [tasks , setTasks] = useState<Task[]>([]);
+    
+    const addNewTask = (tasksList: Task[]) => {
+        setTasks(tasksList);
+        localStorage.storeData(tasksList, '@tasks');
+    }
+
+    const addId = (id: number) => {
+        setId(id);
+        localStorage.storeData(id, '@id');
+    }
+
+    const fetchData = async () => {
+        const tasks: Task[] | null = await localStorage.getData('@tasks');
+        const id: number | null  = await localStorage.getData('@id');
+        if(tasks == (null)) return
+        setTasks(tasks)
+        
+        if(id == (null)) return
+        setId(id);
+
+        console.log(tasks);
+        console.log(id);
+    }
 
     useEffect(() => {
-        setInputIsFocused(inputText.length > 0)
+        fetchData();
+    }, [])
+
+    useEffect(() => {
+        setInputIsFocused(inputText.length > 0);
     }, [inputText])
 
     useEffect(() => {
-        setCreatedTasks(tasks.length)
+        setCreatedTasks(tasks.length);
         let concluded = 0;
         tasks.forEach(task => {
-            if(task.done)
-                concluded++;
-        })
-        setConcludedTasks(concluded)
-    }, [tasks])
+            if(task.done) concluded++;
+        });
+        setConcludedTasks(concluded);
+    }, [tasks]);
 
     const newTask = (done: boolean, description: string, id: string) => {
         return {
@@ -42,20 +69,19 @@ export function Home() {
 
     const handleAddTask = () => {
         if (inputText.length <= 1) return Alert.alert('Digite uma task válida');
-
-        setTasks( prevState => [...prevState, newTask(false, inputText.trim(), `${id}`)]);
+        addNewTask([...tasks, newTask(false, inputText.trim(), `${id}`)]);
         setInputText('');
-        setId(id + 1);
+        addId(id + 1);
     }
 
     const handleDelTask = (clickedIndex: number) => {
         const newTasks = tasks.filter((item, index) => index != clickedIndex);
-        setTasks(newTasks);
+        addNewTask(newTasks);
     }
 
     const handleToogleTask = (clickedIndex: number) => {
         const newTasks = tasks.map((item, index) => index != clickedIndex ? item : newTask(!item.done, item.description, item.id));
-        setTasks(newTasks);
+        addNewTask(newTasks);
     }
 
     return (
